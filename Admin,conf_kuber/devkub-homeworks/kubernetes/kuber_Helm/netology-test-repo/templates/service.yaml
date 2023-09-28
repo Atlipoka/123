@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.metadata.name }}-svc
+  labels:
+    {{- toYaml .Values.metadata.labels | nindent 4 }}
+    {{- include "netology-test-repo.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- toYaml .Values.metadata.labels | nindent 4 }}

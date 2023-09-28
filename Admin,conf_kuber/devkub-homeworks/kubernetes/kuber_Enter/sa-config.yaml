@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: Config
+clusters:
+  - cluster:
+      certificate-authority-data: $AUTORITU_DATA
+      server: $SERVER
+    name: microk8s-cluster
+contexts:
+  - context:
+      cluster: microk8s-cluster
+      user: kabaev
+    name: kabaev-context
+current-context: kabaev-contex
+preferences: {}
+users:
+  - name: kabaev
+    user:
+      client-certificate: /home/vagrant/kubernetes/kuber_Enter/kabaev.crt
+      client-key: /home/vagrant/kubernetes/kuber_Enter/kabaev.key
