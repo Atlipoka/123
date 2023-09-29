@@ -1,0 +1,155 @@
+---
+- name: Preapre all hosts
+  hosts: all
+  tasks:
+    - name: Create group
+      become: true
+      group:
+        name: "{{ jenkins_user_group }}"
+        state: present
+    - name: Create user
+      become: true
+      user:
+        name: "{{ user_name }}"
+        generate_ssh_key: true
+      register: ssh_key_info
+    - name: Install JDK
+      become: true
+      apt:
+        name: "{{ java_packages }}"
+        state: present
+        update_cache: yes
+- name: Get Jenkins master installed
+  hosts: jenkins_masters
+  tasks:
+    - name: Get repo Jenkins
+      become: true
+      command: sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+    - name: Add Jenkins key
+      become: true
+      shell: wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+    - name: Install Jenkins and requirements
+      become: true
+      apt:
+        name:
+          - acl
+          - jenkins
+          - git
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
+      register: jenkins_installed
+    - name: Ensure jenkins agents are present in known_hosts file
+      become: true
+      become_user: jenkins
+      known_hosts:
+        name: "{{ hostvars[item].ansible_host }}"
+        state: present
+        key: "{{ lookup('pipe', 'ssh-keyscan {{ hostvars[item].ansible_host }}') }}"
+        hash_host: true
+      with_items: "{{ groups.jenkins_agents }}"
+    - name: Start Jenkins
+      become: true
+      systemd:
+        name: jenkins
+        state: restarted
+        enabled: true
+      when: jenkins_installed is changed
+- name: Prepare jenkins agent
+  hosts: jenkins_agents
+  become: true
+  become_user: root
+  tasks:
+    - name: Add master publickey into authorized_key
+      authorized_key:
+        user: "{{ jenkins_user_name }}"
+        state: present
+        key: "{{ hostvars['jenkins-master-01']['ssh_key_info']['ssh_public_key'] }}"
+    - name: Create agent_dir
+      become_user: root
+      file:
+        path: "{{ jenkins_agent_dir }}"
+        state: directory
+        owner: "{{ jenkins_user_name }}"
+        group: "{{ jenkins_user_group }}"
+    - name: Prepare docker
+      become: true
+      shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        apt update
+        apt-cache policy docker-ce
+    - name: Install some required
+      become_user: root
+      apt:
+        name:
+          - pip
+          - git
+          - python3
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+    - name: Update pip
+      become_user: root
+      pip:
+        executable: pip3
+        name: pip
+        extra_args: --upgrade
+    - name: Install Ansible
+      become_user: root
+      pip:
+        executable: pip3
+        name:
+          - selinux
+          - ansible<3.0
+        state: present
+    - name: Reinstall Selinux
+      become_user: root
+      pip:
+        executable: pip3
+        name:
+          - selinux
+        state: forcereinstall
+    - name: Install molecule and linters
+      become_user: root
+      pip:
+        executable: pip3
+        name:
+          - molecule==4.0.4
+          - molecule-docker==2.1.0
+          - yamllint
+          - ansible-lint
+        extra_args: --ignore-installed
+    - name: Add local to PATH
+      lineinfile:
+        dest: ~/.bashrc
+        regexp: export PATH=$PATH:/home/jenkins/.local/bin
+        line: export PATH=$PATH:/home/jenkins/.local/bin
+    - name: Create docker group
+      become_user: root
+      group:
+        name: docker
+        state: present
+    - name: Add jenkinsuser to dockergroup
+      become_user: root
+      user:
+        name: "{{ jenkins_user_name }}"
+        groups: docker
+    - name: Restart docker
+      become_user: root
+      systemd:
+        name: docker
+        state: restarted
+        enabled: true
+    - name: Install agent.jar
+      get_url:
+        url: "http://{{ hostvars['jenkins-master-01']['ansible_host'] }}:8080/jnlpJars/agent.jar"
+        dest: "{{ jenkins_agent_dir }}"
+      register: install_agent
+      until: install_agent is succeeded
+      retries: 10
+      timeout: 10

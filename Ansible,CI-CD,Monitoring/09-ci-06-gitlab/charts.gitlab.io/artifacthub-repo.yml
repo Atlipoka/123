@@ -1,0 +1,21 @@
+# Artifact Hub repository metadata file
+repositoryID: e73cb5aa-49cd-4c46-86fd-c5f0edf7f165 
+owners: # (optional, used to claim repository ownership)
+  - name: gitlab
+    email: support@gitlab.com
+  - name: jplum
+    email: jplum@gitlab.com
+  - name: twk3
+    email: dj@gitlab.com
+ignore: # (optional, packages that should not be indexed by Artifact Hub)
+  # don't index this GitLab charts
+  - name: auto-deploy-app        # GitLab application internal
+  - name: kubernetes-gitlab-demo # Deprecated
+  - name: gitlab-omnibus         # Deprecated
+  # don't index these fork/mirror charts
+  - name: apparmor
+  - name: elastic-stack
+  - name: fluentd-elasticsearch
+  - name: knative
+  - name: plantuml
+
