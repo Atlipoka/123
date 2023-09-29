@@ -1,0 +1,19 @@
+---
+# This is an example playbook to execute Ansible tests.
+
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Example assertion
+    ansible.builtin.assert:
+      that: true
+  - name: Get vector version
+    ansible.builtin.command:
+      cmd: vector --version | grep -o 0.25.2
+    register: version
+  - name: Check version
+    ansible.builtin.assert:
+      that: version != "0.25.2"
+      fail_msg: "You have incorrect vector version"
+      success_msg: "You have correct vector version"
