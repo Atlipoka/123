@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: daemon
+spec:
+  selector:
+    matchLabels:
+      name: daemon
+  template:
+    metadata:
+      labels:
+        name: daemon
+    spec:
+      containers:
+      - name: multitool
+        image: wbitt/network-multitool
+        env:
+        - name: HTTP_PORT
+          value: "8080"
+        ports:
+        - containerPort: 8080
+          name: http-port
+        volumeMounts:
+        - name: syslog
+          mountPath: /var/log/syslog
+      volumes:
+      - name: syslog
+        hostPath:
+          path: /var/log/syslog
+      restartPolicy: Always

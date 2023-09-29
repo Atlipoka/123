@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: binding
+  namespace: netology-test
+subjects:
+- kind: User
+  name: Kabaev
+  namespace: netology-test
+  apiGroup: ""
+roleRef:
+  kind: Role
+  name: viewer
+  apiGroup: ""
