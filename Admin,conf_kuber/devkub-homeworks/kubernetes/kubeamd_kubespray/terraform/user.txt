@@ -1,6 +1,0 @@
-users:
-  - name: ubunu
-    shell: /bin/bash
-    sudo: 'ALL=(ALL) NOPASSWD:ALL'
-    ssh-authorized-keys:
-      - 
