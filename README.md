@@ -1,1 +1,1 @@
-# Этот репозиторий с практическими данными по домашним заданиям Kubernetes, Ansible, Monitoring
+# Этот репозиторий с практическими данными по домашним заданиям Kubernetes, Ansible, Monitoring, CI-CD
